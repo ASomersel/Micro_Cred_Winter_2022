@@ -1,0 +1,126 @@
+# SQL Mini - Project
+
+-- Using the dvdrental tables, answering the following questions with a SQL query. 
+----------------------------------------------------------------------------------
+
+1. Write a select statement to return all columns and rows from the customer table.
+	SELECT *
+	FROM customer;
+      
+2. Write a query to return unique rows from the release_year column in the film table.
+	SELECT DISTINCT release_year
+	FROM film;
+
+3. We’re trying to find a customer located at a certain address ‘259 Ipoh Drive’ – can you find their phone number? 
+	SELECT phone
+	FROM address
+	WHERE address = '259 Ipoh Drive';
+
+4. Write a query from the payment table where the amount is either 4.99 or 1.99.
+	SELECT *
+	FROM payment
+	WHERE amount = '4.99' OR amount = '1.99';
+
+5. Display the total amount payed by all customers in the payment table.
+	SELECT sum(amount)
+	FROM payment;
+
+6. For each store, display the number of customers.
+	SELECT count(*)
+	FROM customer
+	WHERE store_id = '1'
+	UNION
+	SELECT count(*)
+	FROM customer
+	WHERE store_id = '2';
+
+7. Show the number of movies each actor acted in
+	SELECT actor.actor_id, first_name, last_name, COUNT(*) AS number_of_movies
+	FROM actor
+	JOIN film_actor
+	ON actor.actor_id = film_actor.actor_id
+	GROUP BY actor.actor_id 
+	ORDER BY actor.actor_id ASC;
+
+8. Count the number of actors who’s first_names don’t start with an ‘A’
+	SELECT COUNT(*)
+	FROM actor
+	WHERE first_name NOT LIKE 'A%';
+
+9. Show the number of movies each actor acted in
+	Repeat
+
+10. Return the total amount spent by each customer.  Only return those customers who spent more than $200
+	SELECT first_name, last_name, SUM(payment.amount) AS total_spent
+	FROM customer
+	JOIN payment
+	ON customer.customer_id = payment.customer_id
+	GROUP BY first_name, last_name
+	HAVING SUM(payment.amount) > 200
+	ORDER BY total_spent DESC;
+
+11. Return the top 10 customers by payment amount
+	SELECT first_name, last_name, SUM(payment.amount) AS total_spent
+	FROM customer
+	JOIN payment
+	ON customer.customer_id = payment.customer_id
+	GROUP BY first_name, last_name
+	ORDER BY total_spent DESC
+	LIMIT 10;
+
+12. Return the name of the actor who was in the most movies
+	SELECT actor.actor_id, actor.first_name, actor.last_name, COUNT(film_actor.actor_id)
+	FROM film_actor
+	JOIN actor
+	ON film_actor.actor_id = actor.actor_id
+	GROUP BY first_name, last_name, actor.actor_id
+	HAVING COUNT (film_actor.actor_id) = (SELECT MAX(movies)
+	FROM (SELECT film_actor.actor_id, COUNT(film_actor.actor_id) movies
+		FROM film_actor
+		GROUP BY film_actor.actor_id) AS lp );
+
+13. Edit the SQL Query from 12 to include the name of the movies they acted in
+	CREATE VIEW best_actor AS
+	SELECT actor.actor_id, actor.first_name, actor.last_name, COUNT(film_actor.actor_id)
+	FROM film_actor
+	JOIN actor
+	ON film_actor.actor_id = actor.actor_id
+	GROUP BY first_name, last_name, actor.actor_id
+	HAVING COUNT (film_actor.actor_id) = (SELECT MAX(movies)
+	FROM (SELECT film_actor.actor_id, COUNT(film_actor.actor_id) movies
+		  FROM film_actor
+		  GROUP BY film_actor.actor_id) AS lp );
+	SELECT film.title, actor.first_name, actor.last_name
+	FROM film
+	JOIN film_actor
+	ON film_actor.film_id = film.film_id
+	JOIN actor
+	ON film_actor.actor_id = actor.actor_id
+	WHERE actor.actor_id = (SELECT best_actor.actor_id 
+				FROM best_actor);
+
+14. For the customer with the highest payment amount, return their name, payment amount, address, address 2, city name, and country
+	CREATE VIEW highest_payment AS
+
+	SELECT customer.customer_id, customer.first_name, customer.last_name, SUM(payment.amount) AS total_spent
+	FROM customer
+	JOIN payment
+	ON customer.customer_id = payment.customer_id
+	GROUP BY customer.customer_id
+	ORDER BY total_spent DESC
+	LIMIT 1; 
+
+	SELECT customer.first_name, customer.last_name, SUM(payment.amount) AS total_spent, address.address, address.address2, 
+			city.city, country.country
+	FROM customer
+	JOIN address
+	ON address.address_id = customer.address_id
+	JOIN city
+	ON address.city_id = city.city_id
+	JOIN country
+	ON city.country_id = country.country_id
+	JOIN payment
+	ON customer.customer_id = payment.customer_id
+	WHERE customer.customer_id = (SELECT highest_payment.customer_id
+				      FROM highest_payment)
+	GROUP BY customer.customer_id, address.address, address.address2, city.city, country.country;
